@@ -3,7 +3,7 @@ import detectEthereumProvider from "@metamask/detect-provider";
 import { wrapEthereumProvider } from "@oasisprotocol/sapphire-paratime";
 import { wrapEthersSigner, wrapEthersProvider } from '@oasisprotocol/sapphire-ethers-v6';
 import Web3 from "web3";
-import { BrowseProvider } from "ethers";
+import { BrowserProvider } from "ethers";
 import artifact30 from "./QshieldLeaderboard.json";
 
 
@@ -17,7 +17,7 @@ const API_BASE_URL = 'https://quantumsure.onrender.com/api';
 
 async function testFetch() {
     const acc = localStorage.getItem("acco");
-    const provider = new BrowseProvider(window.ethereum);
+    const provider = new BrowserProvider(window.ethereum);
     const wProvider = wrapEthersProvider(provider);
     const web3 = new Web3(provider);
     var abiInstance = artifact30.abi;
@@ -42,7 +42,7 @@ window.testFetch = testFetch;
 
 async function testSubmit() {
     const acc = localStorage.getItem("acco");
-    const provider = new BrowseProvider(window.ethereum);
+    const provider = new BrowserProvider(window.ethereum);
     const wSigner = wrapEthersSigner(provider.getSigner());
     const web3 = new Web3(provider);
     var abiInstance = artifact30.abi;
@@ -200,7 +200,7 @@ async function startApp(provider1) {
     })
     console.log("hi");
   const account = accounts[0];
-  var web3 = new Web3(provider);
+  var web3 = new Web3(provider1);
   const bal = await web3.eth.getBalance(account);
 
   console.log(bal);
