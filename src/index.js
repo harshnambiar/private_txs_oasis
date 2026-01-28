@@ -3,8 +3,8 @@ import detectEthereumProvider from "@metamask/detect-provider";
 import { wrapEthereumProvider } from "@oasisprotocol/sapphire-paratime";
 import { wrapEthersSigner, wrapEthersProvider } from '@oasisprotocol/sapphire-ethers-v6';
 import Web3 from "web3";
-import { BrowserProvider } from "ethers";
-import artifact30 from "./QshieldLeaderboard.json";
+import { BrowserProvider, Contract } from "ethers";
+import artifact30 from "./Qsure.json";
 
 
 // === CONFIG ===
@@ -18,16 +18,22 @@ const API_BASE_URL = 'https://quantumsure.onrender.com/api';
 async function testFetch() {
     const acc = localStorage.getItem("acco");
     const provider = new BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
     const wProvider = wrapEthersProvider(provider);
-    const web3 = new Web3(provider);
+    const signer = await provider.getSigner();
+    const wSigner = wrapEthersSigner(signer);
+    const nw = await provider.getNetwork();
+    const code = await provider.getCode("0xddFA5fE9a651eF1411605dA65D73971429841280");
+
+
     var abiInstance = artifact30.abi;
-    var contract = new web3.eth.Contract(abiInstance, "0x6CeE2EbDA4512a6b5dAC74d3FCb0BBf4b9a7910C");
+    var contract = new Contract("0xddFA5fE9a651eF1411605dA65D73971429841280", abiInstance, wSigner);
 
-
+    console.log(contract);
 
 
   try  {
-    var res1 = await contract.methods['getScore']().call({from: acc});
+    var res1 = await contract.getPassword("QuantumSure");
     console.log(res1)
   }
   catch (err){
@@ -43,65 +49,22 @@ window.testFetch = testFetch;
 async function testSubmit() {
     const acc = localStorage.getItem("acco");
     const provider = new BrowserProvider(window.ethereum);
-    const wSigner = wrapEthersSigner(provider.getSigner());
-    const web3 = new Web3(provider);
+    const wProvider = wrapEthersProvider(provider);
+    const signer = await provider.getSigner();
+    const wSigner = wrapEthersSigner(signer);
     var abiInstance = artifact30.abi;
-    const d = localStorage.getItem("edata");
-    const cid = await web3.eth.getChainId();
-
-
-    var contract = new web3.eth.Contract(abiInstance, "0x6CeE2EbDA4512a6b5dAC74d3FCb0BBf4b9a7910C");
-    const res = await fetch(`${API_BASE_URL}/qshield/sign`, {
-    method: 'POST',
-    headers: { 'api_key': apiKey, 'Content-Type': 'application/json'  },
-    body: JSON.stringify({
-      data: { playerAddress: acc, identifier: d, score: 100, chainId: cid }
-    }),
-    });
-
-    const vals = await res.json();
-
-    const vhex = web3.utils.toHex(vals.v);
-
-    const hashFromFrontend = web3.utils.soliditySha3(
-    { type: 'address', value: acc },
-    { type: 'string', value: d },
-    { type: 'uint256', value: 100},
-    { type: 'uint256', value: vals.nonce },
-    { type: 'uint256', value: cid }
-    );
-
-    const recovered = web3.eth.accounts.recover(hashFromFrontend, vhex, vals.r, vals.s);
-    console.log("Recovered signer address:", recovered);
-
-    const recovered2 = web3.eth.accounts.recover(vals.hash, vhex, vals.r, vals.s);
-    console.log("Recovered signer address 2:", recovered2);
-
-
-    var gasEst = BigInt(100000);
-    var gasPriceEst = BigInt(10);
-
-
-
+    var contract = new Contract("0xddFA5fE9a651eF1411605dA65D73971429841280", abiInstance, wSigner);
 
     try {
-      gasEst = await contract.methods.submitScore(d, 100, Number(vals.nonce), Number(vals.v), vals.r, vals.s).estimateGas({from: acc});
-      gasEst = (BigInt(2) * gasEst)/BigInt(1);
-      gasPriceEst = await web3.eth.getGasPrice();
-      gasPriceEst = (BigInt(2) * gasPriceEst)/BigInt(1);
+    const tx = await contract.addPassword("QuantumSure", "pwd123456", {
+      gasLimit: 100_000,
+    });
+    const receipt = await tx.wait();
+    console.log(receipt);
     }
     catch (err){
       console.log(err);
-      return;
     }
-
-
-  contract.methods.submitScore(d, 100, Number(vals.nonce), Number(vals.v), vals.r, vals.s)
-    .send({from: acc, gas: gasEst, gasPrice: gasPriceEst})
-    .catch((error) => {
-        console.error('Call Error:', error);
-        return;
-    });
 
 
 
