@@ -18,27 +18,25 @@ const API_BASE_URL = 'https://quantumsure.onrender.com/api';
 async function testFetch() {
     const acc = localStorage.getItem("acco");
     const provider = new BrowserProvider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
     const wProvider = wrapEthersProvider(provider);
     const signer = await provider.getSigner();
     const wSigner = wrapEthersSigner(signer);
-    const nw = await provider.getNetwork();
-    const code = await provider.getCode("0xddFA5fE9a651eF1411605dA65D73971429841280");
-
-
     var abiInstance = artifact30.abi;
-    var contract = new Contract("0xddFA5fE9a651eF1411605dA65D73971429841280", abiInstance, wSigner);
+    var contract = new Contract("0x7cAb2686f82905e03a42CFBE053492DB2A6Ed479", abiInstance, wSigner);
 
-    console.log(contract);
+    try {
+      const g = await contract.getPassword.estimateGas("QuantumSure");
 
-
-  try  {
-    var res1 = await contract.getPassword("QuantumSure");
-    console.log(res1)
-  }
-  catch (err){
-    console.log(err);
-  }
+    const tx = await contract.getPassword("QuantumSure", {
+      gasLimit: (BigInt(3) * g)/BigInt(2),
+    });
+    const receipt = await tx.wait();
+    const events = receipt.events?.find(e => e.event === "PasswordReturned");
+    console.log(events.args.password);
+    }
+    catch (err){
+      console.log(err);
+    }
 
 
 
@@ -53,7 +51,7 @@ async function testSubmit() {
     const signer = await provider.getSigner();
     const wSigner = wrapEthersSigner(signer);
     var abiInstance = artifact30.abi;
-    var contract = new Contract("0xddFA5fE9a651eF1411605dA65D73971429841280", abiInstance, wSigner);
+    var contract = new Contract("0x7cAb2686f82905e03a42CFBE053492DB2A6Ed479", abiInstance, wSigner);
 
     try {
     const tx = await contract.addPassword("QuantumSure", "pwd123456", {
