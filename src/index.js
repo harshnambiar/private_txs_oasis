@@ -22,7 +22,7 @@ async function testFetch() {
     const signer = await provider.getSigner();
     const wSigner = wrapEthersSigner(signer);
     var abiInstance = artifact30.abi;
-    var contract = new Contract("0x7cAb2686f82905e03a42CFBE053492DB2A6Ed479", abiInstance, wSigner);
+    var contract = new Contract("0x30d82EB15DD52C1cECfB8d0E134429B99568825B", abiInstance, wSigner);
 
     try {
       const g = await contract.getPassword.estimateGas("QuantumSure");
@@ -32,7 +32,7 @@ async function testFetch() {
     });
     const receipt = await tx.wait();
     const events = receipt.events?.find(e => e.event === "PasswordReturned");
-    console.log(events.args.password);
+    console.log(events);
     }
     catch (err){
       console.log(err);
@@ -51,7 +51,7 @@ async function testSubmit() {
     const signer = await provider.getSigner();
     const wSigner = wrapEthersSigner(signer);
     var abiInstance = artifact30.abi;
-    var contract = new Contract("0x7cAb2686f82905e03a42CFBE053492DB2A6Ed479", abiInstance, wSigner);
+    var contract = new Contract("0x30d82EB15DD52C1cECfB8d0E134429B99568825B", abiInstance, wSigner);
 
     try {
     const tx = await contract.addPassword("QuantumSure", "pwd123456", {
