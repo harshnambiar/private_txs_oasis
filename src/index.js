@@ -3,8 +3,10 @@ import detectEthereumProvider from "@metamask/detect-provider";
 import { wrapEthereumProvider } from "@oasisprotocol/sapphire-paratime";
 import { wrapEthersSigner, wrapEthersProvider } from '@oasisprotocol/sapphire-ethers-v6';
 import Web3 from "web3";
-import { BrowserProvider, Contract } from "ethers";
+import { Buffer } from "buffer";
+import { BrowserProvider, Contract, ethers } from "ethers";
 import artifact30 from "./Qsure.json";
+import { AEAD, NonceSize } from '@oasisprotocol/deoxysii';
 
 
 // === CONFIG ===
@@ -22,7 +24,7 @@ async function testFetch() {
     const signer = await provider.getSigner();
     const wSigner = wrapEthersSigner(signer);
     var abiInstance = artifact30.abi;
-    var contract = new Contract("0x30d82EB15DD52C1cECfB8d0E134429B99568825B", abiInstance, wSigner);
+    var contract = new Contract("0x6A5FeF6A0D30E124F4ffcEC677AE712e8964A6cB", abiInstance, wSigner);
 
     try {
       const g = await contract.getPassword.estimateGas("QuantumSure");
@@ -51,7 +53,7 @@ async function testSubmit() {
     const signer = await provider.getSigner();
     const wSigner = wrapEthersSigner(signer);
     var abiInstance = artifact30.abi;
-    var contract = new Contract("0x30d82EB15DD52C1cECfB8d0E134429B99568825B", abiInstance, wSigner);
+    var contract = new Contract("0x6A5FeF6A0D30E124F4ffcEC677AE712e8964A6cB", abiInstance, wSigner);
 
     try {
     const tx = await contract.addPassword("QuantumSure", "pwd123456", {
@@ -71,7 +73,17 @@ window.testSubmit = testSubmit;
 
 
 
+async function testKey(){
+  const acc = localStorage.getItem('acco');
+  if (acc == "" || !acc || acc == null){
+    alert('You need to login');
+    return;
+  }
+  const key = await deriveEncryptionKey("quantumsure", acc, "thisisatest");
+  console.log(key);
 
+}
+window.testKey = testKey;
 
 
 
@@ -170,6 +182,53 @@ async function startApp(provider1) {
   document.getElementById("login-status").textContent = (account.toString().slice(0,8)).concat('..(Logout)');
 
   }
+}
+
+
+
+// Helper to derive the 32-byte key deterministically
+async function deriveEncryptionKey(
+  masterPassword,
+  walletAddress,
+  extraSalt            // optional: API key, app name, etc.
+) {
+  // Combine address + password + optional extra into one "password-like" input
+  const passwordBytes = ethers.toUtf8Bytes(
+    walletAddress.toLowerCase() + '||' + masterPassword + (extraSalt)
+  );
+
+  // Use wallet address (or hash of it) as salt — makes key unique per user
+  const salt = ethers.getAddress(walletAddress);  // normalized checksum address
+
+
+  const derivedKey = await ethers.pbkdf2(
+    passwordBytes,
+    ethers.toUtf8Bytes(salt),   // salt as bytes
+    100_000,                    // iterations — increase if you can afford the delay
+    32,                         // key length
+    'sha256'                    // or 'sha512'
+  );
+
+  const hex = derivedKey.startsWith('0x') ? derivedKey.slice(2) : derivedKey;
+
+
+
+  return new Uint8Array(Buffer.from(hex, 'hex'));
+}
+
+
+async function decryptEvent(key, nonceFromEvent, ciphertextFromEvent){
+  const aead = new AEAD(key);
+
+  const plaintext = aead.decrypt(
+    // IMPORTANT: Deoxys-II uses a 15-byte nonce.
+    // We slice the first 15 bytes from the 32-byte value stored on-chain.
+    ethers.getBytes(nonceFromEvent).slice(0, NonceSize),
+    ethers.getBytes(ciphertextFromEvent),
+    ad,
+  );
+
+  console.log('Decrypted message:', ethers.toUtf8String(plaintext));
 }
 
 

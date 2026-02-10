@@ -8,6 +8,7 @@
     },
     "dependencies": {
         "@metamask/detect-provider": "^2.0.0",
+        "@oasisprotocol/deoxysii": "^0.0.6",
         "@oasisprotocol/sapphire-ethers-v6": "^6.0.1",
         "@oasisprotocol/sapphire-paratime": "^2.3.0",
         "axios": "^1.6.7",
