@@ -24,7 +24,7 @@ async function testFetch() {
     const signer = await provider.getSigner();
     const wSigner = wrapEthersSigner(signer);
     var abiInstance = artifact30.abi;
-    var contract = new Contract("0x6A5FeF6A0D30E124F4ffcEC677AE712e8964A6cB", abiInstance, wSigner);
+    var contract = new Contract("0x24A99A6dcFC3332443037C5a09505731312fD154", abiInstance, wSigner);
 
     try {
       const g = await contract.getPassword.estimateGas("QuantumSure");
@@ -53,7 +53,7 @@ async function testSubmit() {
     const signer = await provider.getSigner();
     const wSigner = wrapEthersSigner(signer);
     var abiInstance = artifact30.abi;
-    var contract = new Contract("0x6A5FeF6A0D30E124F4ffcEC677AE712e8964A6cB", abiInstance, wSigner);
+    var contract = new Contract("0x24A99A6dcFC3332443037C5a09505731312fD154", abiInstance, wSigner);
 
     try {
     const tx = await contract.addPassword("QuantumSure", "pwd123456", {
