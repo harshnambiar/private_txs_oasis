@@ -14,6 +14,7 @@ const API_BASE_URL = 'https://quantumsure.onrender.com/api';
 //const API_BASE_URL = 'http://localhost:5000/api';
 
 
+var key = [];
 
 // contract
 
@@ -24,12 +25,16 @@ async function testFetch() {
     const signer = await provider.getSigner();
     const wSigner = wrapEthersSigner(signer);
     var abiInstance = artifact30.abi;
+
+    const key = await deriveEncryptionKey("quantumsure", acc, "thisisatest");
+    console.log(key);
+
     var contract = new Contract("0x24A99A6dcFC3332443037C5a09505731312fD154", abiInstance, wSigner);
 
     try {
-      const g = await contract.getPassword.estimateGas("QuantumSure");
-
-    const tx = await contract.getPassword("QuantumSure", {
+      const g = await contract.getPassword.estimateGas(key, "QuantumSure");
+      console.log(g);
+    const tx = await contract.getPassword(key, "QuantumSure", {
       gasLimit: (BigInt(3) * g)/BigInt(2),
     });
     const receipt = await tx.wait();
@@ -56,7 +61,7 @@ async function testSubmit() {
     var contract = new Contract("0x24A99A6dcFC3332443037C5a09505731312fD154", abiInstance, wSigner);
 
     try {
-    const tx = await contract.addPassword("QuantumSure", "pwd123456", {
+    const tx = await contract.addPassword("QuantumSure", "pwd654321", {
       gasLimit: 100_000,
     });
     const receipt = await tx.wait();
@@ -79,11 +84,25 @@ async function testKey(){
     alert('You need to login');
     return;
   }
-  const key = await deriveEncryptionKey("quantumsure", acc, "thisisatest");
+  key = await deriveEncryptionKey("quantumsure", acc, "thisisatest");
   console.log(key);
 
 }
 window.testKey = testKey;
+
+
+async function testDecrypt(){
+  const acc = localStorage.getItem('acco');
+  if (acc == "" || !acc || acc == null){
+    alert('You need to login');
+    return;
+  }
+  console.log(key);
+  const pwd = await decryptEvent(key, "0x837d258ddb1e8c58806c84379e80b73fff0cd8b85696b0dca4309e5b0bf5f36d", "0x580772ce10ad6053a2a68e48092b8f0a5c3f1415f1b59b5c16");
+  console.log(pwd);
+
+}
+window.testDecrypt = testDecrypt;
 
 
 
@@ -225,7 +244,7 @@ async function decryptEvent(key, nonceFromEvent, ciphertextFromEvent){
     // We slice the first 15 bytes from the 32-byte value stored on-chain.
     ethers.getBytes(nonceFromEvent).slice(0, NonceSize),
     ethers.getBytes(ciphertextFromEvent),
-    ad,
+    "",
   );
 
   console.log('Decrypted message:', ethers.toUtf8String(plaintext));
