@@ -32,14 +32,27 @@ async function testFetch() {
     var contract = new Contract("0x24A99A6dcFC3332443037C5a09505731312fD154", abiInstance, wSigner);
 
     try {
-      const g = await contract.getPassword.estimateGas(key, "QuantumSure");
+      const g = await contract.getPassword.estimateGas(key, "QuantumSure3");
       console.log(g);
-    const tx = await contract.getPassword(key, "QuantumSure", {
-      gasLimit: (BigInt(3) * g)/BigInt(2),
-    });
-    const receipt = await tx.wait();
-    const events = receipt.events?.find(e => e.event === "PasswordReturned");
-    console.log(events);
+      const tx = await contract.getPassword(key, "QuantumSure3", {
+        gasLimit: (BigInt(3) * g)/BigInt(2),
+      });
+      const receipt = await tx.wait();
+      receipt.logs.forEach((log, index) => {
+        console.log(log.fragment?.name || "unknown");
+        console.log(log.data);
+      });
+
+      const prEvents = receipt.logs.filter(log => log.fragment?.name === "PasswordReturned");
+      if (prEvents.length > 0){
+          const ev = prEvents[0];
+          console.log(ev.args[1]);
+          const pwd = await decryptEvent(key, ev.args[1], ev.args[3]);
+          console.log(pwd);
+      }
+      else {
+        console.log("Password decrypt failed.");
+      }
     }
     catch (err){
       console.log(err);
@@ -61,7 +74,7 @@ async function testSubmit() {
     var contract = new Contract("0x24A99A6dcFC3332443037C5a09505731312fD154", abiInstance, wSigner);
 
     try {
-    const tx = await contract.addPassword("QuantumSure", "pwd654321", {
+    const tx = await contract.addPassword("QuantumSure3", "abdac15432", {
       gasLimit: 100_000,
     });
     const receipt = await tx.wait();
@@ -98,7 +111,7 @@ async function testDecrypt(){
     return;
   }
   console.log(key);
-  const pwd = await decryptEvent(key, "0x837d258ddb1e8c58806c84379e80b73fff0cd8b85696b0dca4309e5b0bf5f36d", "0x580772ce10ad6053a2a68e48092b8f0a5c3f1415f1b59b5c16");
+  const pwd = await decryptEvent(key, "0x69023fdc6b255b11915a4b58832abb21a93deee19ba0817f810f58b614136296", "0xbead2cab498a5986c38d159df51cff190b59dc79a1bea580d3");
   console.log(pwd);
 
 }
@@ -238,16 +251,18 @@ async function deriveEncryptionKey(
 
 async function decryptEvent(key, nonceFromEvent, ciphertextFromEvent){
   const aead = new AEAD(key);
-
+  const ad = Uint8Array.from(Buffer.from("additional crap", "utf8"));
+  console.log(ad);
   const plaintext = aead.decrypt(
     // IMPORTANT: Deoxys-II uses a 15-byte nonce.
     // We slice the first 15 bytes from the 32-byte value stored on-chain.
     ethers.getBytes(nonceFromEvent).slice(0, NonceSize),
     ethers.getBytes(ciphertextFromEvent),
-    "",
+    ad,
   );
 
-  console.log('Decrypted message:', ethers.toUtf8String(plaintext));
+  //console.log('Decrypted message:', ethers.toUtf8String(plaintext));
+  return ethers.toUtf8String(plaintext);
 }
 
 
